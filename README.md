@@ -83,10 +83,12 @@ Or run a one-off query:
 ```bash
 docker compose exec chinook-db \
   psql -U chinook -d chinook \
-  -c 'SELECT "Name", "Composer" FROM "Track" ORDER BY "TrackId" LIMIT 5;'
+  -c 'SELECT name, composer FROM track ORDER BY trackid LIMIT 5;'
 ```
 
 You can also connect from local tools with the connection string `postgresql://chinook:chinook@localhost:5432/chinook`.
+
+> **Tip:** PostgreSQL automatically lowercases unquoted identifiers, so Chinook tables/columns are stored as `album`, `track`, `artist`, etc. Reference them in lowercase (or quote the lowercase spelling) to avoid `relation ... does not exist` errors.
 
 ### Configure the MCP server
 
@@ -134,11 +136,13 @@ If you prefer SQLite, point the URL at `sqlite:///data/Chinook_Sqlite.sqlite`.
 
 3. **Query the Chinook database**:
 
-   ```bash
-   python client/main.py query_db "SELECT \"Name\", \"Composer\" FROM \"Track\" LIMIT 5;"
+```bash
+   python client/main.py query_db "SELECT name, composer FROM track LIMIT 5;"
    ```
 
    The client starts `server/fast_mcp_server.py`, which loads `.env`, connects to the configured database, and returns the tabular results.
+
+   > **Note:** PostgreSQL folds unquoted identifiers to lowercase, so table/column names from the Chinook script appear as `track`, `album`, `name`, etc. Use lowercase (or quote the exact lowercase spelling) when running your queries.
 
 ### Running Tests
 

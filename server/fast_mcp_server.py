@@ -14,14 +14,14 @@ from typing import Iterable
 
 import psycopg
 from fastmcp import FastMCP
-from psycopg import sql
 from pydantic import BaseModel, Field
+from typing_extensions import Annotated
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastMCP(
-    name="hello-mcp",
+    name="mcp-browse-me",
     version="1.0.0",
 )
 
@@ -62,12 +62,6 @@ class BrowseFilesArgs(BaseModel):
     """Input schema for the browse_files tool."""
 
     path: str = Field(..., description="The directory path to browse.")
-
-
-class QueryDatabaseArgs(BaseModel):
-    """Input schema for the query_database tool."""
-
-    query: str = Field(..., description="SQL query to execute against DATABASE_URL.")
 
 
 @app.tool
@@ -147,7 +141,7 @@ def execute_postgres_query(database_url: str, query: str) -> str:
     """Execute a SQL query against a PostgreSQL database."""
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cursor:
-            cursor.execute(sql.SQL(query))  # type: ignore[arg-type]
+            cursor.execute(query)  # type: ignore
             if cursor.description is None:
                 conn.commit()
                 return f"Query executed successfully. Rows affected: {cursor.rowcount}"
@@ -172,13 +166,18 @@ def execute_sql(query: str) -> str:
     raise ValueError(f"Unsupported DATABASE_URL scheme in '{database_url}'.")
 
 
+QueryArgument = Annotated[
+    str, Field(description="SQL query to execute against DATABASE_URL.")
+]
+
+
 @app.tool
-async def query_database(args: QueryDatabaseArgs) -> str:
+async def query_database(query: QueryArgument) -> str:
     """Run arbitrary SQL against the configured Chinook database."""
     logger.info("Executing SQL query")
     try:
-        return await asyncio.to_thread(execute_sql, args.query)
-    except Exception as exc:  # pragma: no cover - defensive guard
+        return await asyncio.to_thread(execute_sql, query)
+    except Exception as exc:
         logger.exception("Failed to execute query: %s", exc)
         return f"Failed to execute query: {exc}"
 
