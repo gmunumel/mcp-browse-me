@@ -1,0 +1,21 @@
+services:
+  chinook-db:
+    image: postgres:16-alpine
+    container_name: chinook-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chinook
+      POSTGRES_PASSWORD: chinook
+      POSTGRES_DB: chinook
+    volumes:
+      - ./data/Chinook_PostgreSql.sql:/docker-entrypoint-initdb.d/01_chinook.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chinook -d chinook"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes: {}

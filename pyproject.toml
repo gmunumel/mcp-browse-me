@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-browse-me"
+version = "0.1.0"
+description = "A simple Model Context Protocol Hello World application"
+authors = [
+    {name = "Gabriel Munumel", email = "gabrielmunumel@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "fastmcp>=2.13.0.2",
+    "mcp[cli]>=1.19.0",
+    "pydantic>=2.0.0",
+    "psycopg[binary]>=3.1.18",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/mcp-browse-me"
+Repository = "https://github.com/your-username/mcp-browse-me"
+
+[tool.setuptools]
+# Since this is not a traditional Python package but rather
+# a collection of scripts, we tell setuptools not to auto-discover packages
+packages = []
+
+[tool.setuptools.package-data]
+# Include any data files you might need
+"*" = ["*.txt", "*.md"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
