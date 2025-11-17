@@ -84,7 +84,7 @@ async def main() -> None:
             "Examples:\n"
             "  python client/main.py hello Alice\n"
             "  python client/main.py browse_files .\n"
-            "  python client/main.py query_db \"SELECT COUNT(*) FROM \\\"Track\\\";\""
+            '  python client/main.py query_db "SELECT COUNT(*) FROM \\"Track\\";"'
         )
         sys.exit(1)
 

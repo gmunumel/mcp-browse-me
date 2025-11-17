@@ -155,7 +155,8 @@ def execute_sql(query: str) -> str:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         raise RuntimeError(
-            "DATABASE_URL is not set. Add it to .env or the environment before querying."
+            "DATABASE_URL is not set. Add it to .env or "
+            "the environment before querying."
         )
     if database_url.startswith("sqlite:///"):
         return execute_sqlite_query(database_url, query)

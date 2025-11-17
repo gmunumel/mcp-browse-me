@@ -30,8 +30,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black>=23.0.0",
-    "isort>=5.12.0",
     "mypy>=1.0.0",
 ]
 
@@ -48,16 +46,27 @@ packages = []
 # Include any data files you might need
 "*" = ["*.txt", "*.md"]
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ['py310']
+target-version = "py310"
 
-[tool.isort]
-profile = "black"
-line_length = 88
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # I = import sorting; E,F = basic lint
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"       # black-style formatting
+indent-style = "space"
+line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "ruff>=0.14.5",
+]
