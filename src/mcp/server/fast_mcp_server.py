@@ -14,7 +14,7 @@ from typing import Iterable
 
 import psycopg
 from fastmcp import FastMCP
-from pydantic import BaseModel, Field
+from pydantic import Field
 from typing_extensions import Annotated
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +25,7 @@ app = FastMCP(
     version="1.0.0",
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ENV_PATH = PROJECT_ROOT / ".env"
 
 
@@ -46,52 +46,40 @@ def load_env_file(env_path: Path) -> None:
 load_env_file(ENV_PATH)
 
 
-class SayHelloArgs(BaseModel):
-    """Input schema for the say_hello tool."""
-
-    name: str = Field(..., description="The name of the person to greet.")
-
-
-class SayGoodbyeArgs(BaseModel):
-    """Input schema for the say_goodbye tool."""
-
-    name: str = Field(..., description="The name of the person to bid farewell.")
-
-
-class BrowseFilesArgs(BaseModel):
-    """Input schema for the browse_files tool."""
-
-    path: str = Field(..., description="The directory path to browse.")
-
-
 @app.tool
-async def say_hello(args: SayHelloArgs) -> str:
+async def say_hello(
+    name: Annotated[str, Field(description="The name of the person to greet.")],
+) -> str:
     """Return a friendly greeting."""
-    logger.info("Generating greeting for: %s", args.name)
-    return f"Hello, {args.name}!"
+    logger.info("Generating greeting for: %s", name)
+    return f"Hello, {name}!"
 
 
 @app.tool
-async def say_goodbye(args: SayGoodbyeArgs) -> str:
+async def say_goodbye(
+    name: Annotated[str, Field(description="The name of the person to bid farewell.")],
+) -> str:
     """Return a friendly farewell."""
-    logger.info("Generating farewell for: %s", args.name)
-    return f"Goodbye, {args.name}!"
+    logger.info("Generating farewell for: %s", name)
+    return f"Goodbye, {name}!"
 
 
 @app.tool
-async def browse_files(args: BrowseFilesArgs) -> str:
+async def browse_files(
+    path: Annotated[str, Field(description="The directory path to browse.")],
+) -> str:
     """Return a comma-separated list of files found at the given path."""
-    path = Path(args.path).expanduser()
-    logger.info("Browsing files at: %s", path)
+    resolved = Path(path).expanduser()
+    logger.info("Browsing files at: %s", resolved)
     try:
-        files = os.listdir(path)
+        files = os.listdir(resolved)
     except FileNotFoundError:
-        return f"The path '{path}' does not exist."
+        return f"The path '{resolved}' does not exist."
     except NotADirectoryError:
-        return f"The path '{path}' is not a directory."
+        return f"The path '{resolved}' is not a directory."
     except PermissionError:
-        return f"Permission denied while accessing '{path}'."
-    return f"Files at {path}: " + ", ".join(files)
+        return f"Permission denied while accessing '{resolved}'."
+    return f"Files at {resolved}: " + ", ".join(files)
 
 
 def format_rows(headers: Iterable[str], rows: list[tuple[object, ...]]) -> str:

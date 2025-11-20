@@ -8,9 +8,10 @@ import logging
 import os
 from typing import Any, Sequence
 
-from mcp.server import InitializationOptions, Server
 from mcp.server.stdio import stdio_server
 from mcp.types import ServerCapabilities, TextContent, Tool, ToolsCapability
+
+from mcp.server import InitializationOptions, Server
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

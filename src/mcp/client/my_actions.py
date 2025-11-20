@@ -1,18 +1,20 @@
-#!/usr/bin/env python3
-"""
-MCP Hello World Client (using official mcp package)
-"""
+"""Client actions for MCP Browse Me."""
 
-import asyncio
+from __future__ import annotations
+
 import logging
 import sys
+from pathlib import Path
+from typing import Awaitable, Callable
 
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.types import TextContent
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+SERVER_SCRIPT = PROJECT_ROOT / "src" / "mcp" / "server" / "fast_mcp_server.py"
 
 
 async def call_hello_tool(session: ClientSession, name: str) -> str:
@@ -75,47 +77,40 @@ async def call_query_db_tool(session: ClientSession, query: str) -> str:
     return "No response content received"
 
 
-async def main() -> None:
-    """Main client function."""
-    if len(sys.argv) != 3:
-        print(
-            "Usage: python client/main.py <action> <value>\n"
-            "Actions: hello, goodbye, browse_files, query_db\n"
-            "Examples:\n"
-            "  python client/main.py hello Alice\n"
-            "  python client/main.py browse_files .\n"
-            '  python client/main.py query_db "SELECT COUNT(*) FROM \\"Track\\";"'
+ActionHandler = Callable[[ClientSession, str], Awaitable[str]]
+
+
+ACTION_HANDLERS: dict[str, ActionHandler] = {
+    "hello": call_hello_tool,
+    "goodbye": call_goodbye_tool,
+    "browse_files": call_browse_files_tool,
+    "query_db": call_query_db_tool,
+}
+
+
+SUPPORTED_ACTIONS = tuple(ACTION_HANDLERS.keys())
+
+
+async def run_client_action(action: str, value: str) -> str:
+    """Run a client action by invoking the fast MCP server over stdio."""
+    handler = ACTION_HANDLERS.get(action)
+    if handler is None:
+        raise ValueError(
+            f"Unknown action '{action}'. Expected one of {SUPPORTED_ACTIONS}"
         )
-        sys.exit(1)
 
-    action = sys.argv[1]
-    value = sys.argv[2]
-    logger.info("Starting MCP %s action with input: %s", action, value)
+    if not SERVER_SCRIPT.exists():
+        raise FileNotFoundError(
+            f"Could not find fast MCP server at {SERVER_SCRIPT}. "
+            "Ensure the project structure is intact."
+        )
 
-    server_cmd = [sys.executable, "server/fast_mcp_server.py"]
+    server_cmd = [sys.executable, str(SERVER_SCRIPT)]
 
-    # Connect to server over stdio
     async with stdio_client(
         StdioServerParameters(command=server_cmd[0], args=server_cmd[1:])
     ) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
-            logger.info("Connected to MCP %s World Server", action)
-
-            if action == "hello":
-                response = await call_hello_tool(session, value)
-            elif action == "goodbye":
-                response = await call_goodbye_tool(session, value)
-            elif action == "browse_files":
-                response = await call_browse_files_tool(session, value)
-            elif action == "query_db":
-                response = await call_query_db_tool(session, value)
-            else:
-                logger.error("Unknown action: %s", action)
-                sys.exit(1)
-
-            print(f"\nServer Response: {response}\n")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+            logger.info("Connected to MCP %s action handler", action)
+            return await handler(session, value)

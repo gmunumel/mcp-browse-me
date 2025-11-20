@@ -14,6 +14,20 @@ This project implements a minimal MCP server that provides a "hello" tool and a 
 - **Comprehensive Testing**: Unit tests for both server and client components
 - **Type Safety**: Full type annotations throughout the codebase
 
+## Project Layout
+
+```
+├── data/                         # Chinook sample data
+├── src/
+│   ├── api/                      # FastAPI application that wraps the MCP client
+│   └── mcp/
+│       ├── client/               # Interactive MCP client logic
+│       └── server/               # fastmcp + reference server implementations
+├── docker-compose.yml            # Postgres + Chinook bootstrapper
+├── pyproject.toml                # Project metadata and dependency list
+└── README.md
+```
+
 ## Setup
 
 ### Prerequisites
@@ -100,49 +114,59 @@ DATABASE_URL=postgresql://chinook:chinook@localhost:5432/chinook
 
 If you prefer SQLite, point the URL at `sqlite:///data/Chinook_Sqlite.sqlite`.
 
+An `OPENAI_API_KEY` entry is already present in `.env` for future integrations—leave it populated with your own key if you plan to extend the project with OpenAI tooling.
+
 ## Usage
 
-### Running the Application
+### Running the MCP Client
 
-1. **Start the server**:
-
-   ```bash
-   python server/main.py
-
-   or using fastmcp:
-
-   python server/fast_mcp_server.py
-   ```
-
-2. **Start the client** (which will automatically start the server):
-
-   ```bash
-   python client/main.py <action> <your_name>
-   ```
-
-   `<action>` could be: _hello_, _goodbye_, _browse_files_, or _query_db_.
-
-   Example:
-
-   ```bash
-   python client/main.py Alice
-   ```
-
-   Expected output:
-
-   ```
-   🎉 Server Response: Hello, Alice! Welcome to the MCP Hello World server! 🌍
-   ```
-
-3. **Query the Chinook database**:
+The CLI automatically launches `src/mcp/server/fast_mcp_server.py`, which loads `.env`, connects to the configured database, and executes the requested tool.
 
 ```bash
-   python client/main.py query_db "SELECT name, composer FROM track LIMIT 5;"
-   ```
+python src/mcp/client/main.py <action> <value>
+```
 
-   The client starts `server/fast_mcp_server.py`, which loads `.env`, connects to the configured database, and returns the tabular results.
+`<action>` can be: `hello`, `goodbye`, `browse_files`, or `query_db`.
 
-   > **Note:** PostgreSQL folds unquoted identifiers to lowercase, so table/column names from the Chinook script appear as `track`, `album`, `name`, etc. Use lowercase (or quote the exact lowercase spelling) when running your queries.
+> Alternatively, run `PYTHONPATH=src/mcp python -m client.main <action> <value>` if you prefer the `-m` style command.
+
+Examples:
+
+```bash
+python src/mcp/client/main.py hello Alice
+python src/mcp/client/main.py browse_files .
+python src/mcp/client/main.py query_db "SELECT name, composer FROM track LIMIT 5;"
+```
+
+> **Note:** PostgreSQL folds unquoted identifiers to lowercase, so table/column names from the Chinook script appear as `track`, `album`, `name`, etc. Use lowercase (or quote the exact lowercase spelling) when running your queries.
+
+### FastAPI Endpoint
+
+A lightweight API surfaces the same MCP actions over HTTP.
+
+Start the server (after `uv sync`/`pip install -e .`):
+
+```bash
+uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Invoke it with `curl`, HTTPie, or your HTTP client of choice:
+
+```bash
+curl -X POST http://127.0.0.1:8000/actions \
+  -H "Content-Type: application/json" \
+  -d '{"action":"hello","value":"Alice"}'
+```
+
+The response payload mirrors the CLI output:
+
+```json
+{
+  "action": "hello",
+  "value": "Alice",
+  "response": "Hello, Alice!"
+}
+```
 
 ### Running Tests
 
@@ -155,7 +179,7 @@ pytest
 Run tests with coverage:
 
 ```bash
-pytest --cov=server --cov=client
+pytest --cov=src/mcp --cov=src/api
 ```
 
 Run specific test files:
@@ -182,28 +206,36 @@ isort .
 Type checking:
 
 ```bash
-mypy server/ client/
+mypy src
 ```
 
 ## Architecture
 
-### Server (`server/main.py`)
+### Server (`src/mcp/server/fast_mcp_server.py`)
 
-The MCP server implements:
+The fastmcp server exposes several tools:
 
-- **HelloInput Model**: Pydantic model for input validation
-- **list_tools Handler**: Returns available tools (hello tool)
-- **call_tool Handler**: Processes tool calls and generates greetings
-- **STDIO Transport**: Uses standard input/output for communication
+- **say_hello / say_goodbye**: Friendly greetings with Pydantic validation
+- **browse_files**: Sanitized directory listings with helpful error messages
+- **query_database**: Executes SQL against the Chinook database (SQLite or PostgreSQL) based on `DATABASE_URL`
+- **Environment bootstrap**: Loads `.env` automatically so CLI/API invocations share DB credentials
 
-### Client (`client/main.py`)
+### Client (`src/mcp/client`)
 
-The MCP client implements:
+The client package contains reusable action helpers (`my_actions.py`) and the CLI entry point (`main.py`):
 
-- **Session Management**: Establishes connection with the server
-- **Tool Discovery**: Lists available tools from the server
-- **Tool Invocation**: Calls the hello tool with user-provided name
-- **Error Handling**: Gracefully handles connection and call errors
+- **Session Management**: Establishes STDIO sessions against the fastmcp server
+- **Tool Discovery**: Logs available tools before dispatching a request
+- **Shared Helpers**: `run_client_action` drives both the CLI and HTTP API layers
+- **Error Handling**: Raises descriptive errors for unsupported actions and missing server scripts
+
+### API (`src/api/main.py`)
+
+The FastAPI service wraps the MCP client:
+
+- **Validation**: Ensures incoming `action` values match the supported tool list
+- **/actions Endpoint**: Executes MCP actions asynchronously and returns the text result
+- **/health Endpoint**: Lightweight readiness probe for container orchestration
 
 ### Communication Flow
 
@@ -268,7 +300,7 @@ The project includes comprehensive unit tests:
 3. Run tests: `pytest`
 4. Format code: `black .`
 5. Sort imports: `isort .`
-6. Type check: `mypy server/ client/`
+6. Type check: `mypy src`
 
 ## License
 
