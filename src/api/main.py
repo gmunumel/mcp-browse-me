@@ -7,7 +7,7 @@ import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
-from src.mcp.client.my_actions import SUPPORTED_ACTIONS, run_client_action
+from src.mcp.client.actions import SUPPORTED_ACTIONS, run_client_action
 
 logger = logging.getLogger(__name__)
 

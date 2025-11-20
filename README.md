@@ -222,7 +222,7 @@ The fastmcp server exposes several tools:
 
 ### Client (`src/mcp/client`)
 
-The client package contains reusable action helpers (`my_actions.py`) and the CLI entry point (`main.py`):
+The client package contains reusable action helpers (`actions.py`) and the CLI entry point (`main.py`):
 
 - **Session Management**: Establishes STDIO sessions against the fastmcp server
 - **Tool Discovery**: Logs available tools before dispatching a request
