@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -11,7 +10,7 @@ from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.types import TextContent
 
-logger = logging.getLogger(__name__)
+from src.logger import logger
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SERVER_SCRIPT = PROJECT_ROOT / "src" / "mcp" / "server" / "fast_mcp_server.py"
@@ -77,6 +76,21 @@ async def call_query_db_tool(session: ClientSession, query: str) -> str:
     return "No response content received"
 
 
+async def call_list_tables_tool(session: ClientSession, _: str) -> str:
+    """Call the list_tables tool to enumerate DB tables."""
+    tools = await session.list_tools()
+    logger.info("Available tools: %s", [tool.name for tool in tools.tools])
+
+    result = await session.call_tool("list_tables", {})
+
+    if result.content:
+        content = result.content[0]
+        text_content = content if isinstance(content, TextContent) else None
+        if text_content:
+            return text_content.text if text_content.text else ""
+    return "No response content received"
+
+
 ActionHandler = Callable[[ClientSession, str], Awaitable[str]]
 
 
@@ -85,6 +99,7 @@ ACTION_HANDLERS: dict[str, ActionHandler] = {
     "goodbye": call_goodbye_tool,
     "browse_files": call_browse_files_tool,
     "query_db": call_query_db_tool,
+    "list_tables": call_list_tables_tool,
 }
 
 

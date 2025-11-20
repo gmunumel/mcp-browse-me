@@ -4,7 +4,6 @@ MCP Hello World Server (using official mcp package)
 """
 
 import asyncio
-import logging
 import os
 from typing import Any, Sequence
 
@@ -12,9 +11,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import ServerCapabilities, TextContent, Tool, ToolsCapability
 
 from mcp.server import InitializationOptions, Server
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from src.logger import logger
 
 # Create the server
 server = Server(name="hello-mcp", version="1.0.0")

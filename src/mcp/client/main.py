@@ -4,13 +4,10 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import sys
 
+from src.logger import logger
 from src.mcp.client.actions import SUPPORTED_ACTIONS, run_client_action
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 def _print_usage() -> None:

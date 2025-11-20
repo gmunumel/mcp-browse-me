@@ -136,6 +136,7 @@ Examples:
 python src/mcp/client/main.py hello Alice
 python src/mcp/client/main.py browse_files .
 python src/mcp/client/main.py query_db "SELECT name, composer FROM track LIMIT 5;"
+python src/mcp/client/main.py list_tables ""
 ```
 
 > **Note:** PostgreSQL folds unquoted identifiers to lowercase, so table/column names from the Chinook script appear as `track`, `album`, `name`, etc. Use lowercase (or quote the exact lowercase spelling) when running your queries.
@@ -167,6 +168,18 @@ The response payload mirrors the CLI output:
   "response": "Hello, Alice!"
 }
 ```
+
+### LangChain Agent Endpoint
+
+An agent-backed endpoint uses OpenAI + LangChain to call the MCP tools on your behalf (requires `OPENAI_API_KEY` in `.env`).
+
+```bash
+curl -X POST http://127.0.0.1:8000/agent \
+  -H "Content-Type: application/json" \
+  -d '{"question":"List files in . and tell me what database tables exist"}'
+```
+
+The agent will invoke MCP tools like `browse_files`, `list_tables`, and `query_db` as needed to answer the question.
 
 ### Running Tests
 

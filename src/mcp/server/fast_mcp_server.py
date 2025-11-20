@@ -6,9 +6,9 @@ MCP Hello World Server implemented with fastmcp.
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Iterable
 
@@ -17,33 +17,19 @@ from fastmcp import FastMCP
 from pydantic import Field
 from typing_extensions import Annotated
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from src.logger import logger  # noqa: E402, pylint: disable=wrong-import-position
+from src.settings import settings  # noqa: E402, pylint: disable=wrong-import-position
+
+settings.load_env()
 
 app = FastMCP(
     name="mcp-browse-me",
     version="1.0.0",
 )
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-ENV_PATH = PROJECT_ROOT / ".env"
-
-
-def load_env_file(env_path: Path) -> None:
-    """Populate os.environ with values from a .env file."""
-    if not env_path.exists():
-        logger.info("No .env file found at %s", env_path)
-        return
-
-    for line in env_path.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip())
-
-
-load_env_file(ENV_PATH)
 
 
 @app.tool
@@ -51,7 +37,7 @@ async def say_hello(
     name: Annotated[str, Field(description="The name of the person to greet.")],
 ) -> str:
     """Return a friendly greeting."""
-    logger.info("Generating greeting for: %s", name)
+    logger.info("[FAST-MCP] Generating greeting for: %s", name)
     return f"Hello, {name}!"
 
 
@@ -60,7 +46,7 @@ async def say_goodbye(
     name: Annotated[str, Field(description="The name of the person to bid farewell.")],
 ) -> str:
     """Return a friendly farewell."""
-    logger.info("Generating farewell for: %s", name)
+    logger.info("[FAST-MCP] Generating farewell for: %s", name)
     return f"Goodbye, {name}!"
 
 
@@ -70,7 +56,7 @@ async def browse_files(
 ) -> str:
     """Return a comma-separated list of files found at the given path."""
     resolved = Path(path).expanduser()
-    logger.info("Browsing files at: %s", resolved)
+    logger.info("[FAST-MCP] Browsing files at: %s", resolved)
     try:
         files = os.listdir(resolved)
     except FileNotFoundError:
@@ -160,15 +146,43 @@ QueryArgument = Annotated[
 ]
 
 
+def build_list_tables_query(database_url: str) -> str:
+    """Return a SQL statement that lists tables for the configured database."""
+    if database_url.startswith("sqlite:///"):
+        return "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+    if database_url.startswith("postgresql://") or database_url.startswith(
+        "postgres://"
+    ):
+        return (
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema='public' ORDER BY table_name;"
+        )
+    raise ValueError(f"Unsupported DATABASE_URL scheme in '{database_url}'.")
+
+
 @app.tool
 async def query_database(query: QueryArgument) -> str:
     """Run arbitrary SQL against the configured Chinook database."""
-    logger.info("Executing SQL query")
+    logger.info("[FAST-MCP] Executing SQL query: %s", query)
     try:
         return await asyncio.to_thread(execute_sql, query)
     except Exception as exc:
         logger.exception("Failed to execute query: %s", exc)
         return f"Failed to execute query: {exc}"
+
+
+@app.tool
+async def list_tables() -> str:
+    """List tables in the configured database (SQLite or PostgreSQL)."""
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        return "DATABASE_URL is not set."
+    try:
+        query = build_list_tables_query(database_url)
+        return await asyncio.to_thread(execute_sql, query)
+    except Exception as exc:
+        logger.exception("Failed to list tables: %s", exc)
+        return f"Failed to list tables: {exc}"
 
 
 def main() -> None:
