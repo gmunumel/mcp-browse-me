@@ -1,0 +1,41 @@
+{
+  "name": "mcp-browse-me",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.devcontainer.yml"
+  ],
+  "service": "devcontainer",
+  "runServices": ["chinook-db", "chromadb", "devcontainer"],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "features": {},
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "./venv/bin/python"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.mypy-type-checker",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "streetsidesoftware.code-spell-checker",
+        "openai.chatgpt",
+        "vscodevim.vim"
+      ]
+    }
+  },
+  "onCreateCommand": "[ -f /workspace/.aliases.sh ] && cat /workspace/.aliases.sh >> ~/.bashrc",
+  "postCreateCommand": "uv sync --frozen || pip install -e .",
+  //"postStartCommand": "/workspace/.devcontainer/post-start.sh",
+  "forwardPorts": [3000],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${localWorkspaceFolder}/,target=/app/,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=/root/.codex,type=bind,consistency=cached"
+  ]
+}

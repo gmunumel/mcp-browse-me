@@ -38,7 +38,9 @@ class ChromaMemory:
             allow_reset=True,
             anonymized_telemetry=False,
         )
-        self.client = chromadb.HttpClient(settings=settings)
+        # Pass host/port directly so HttpClient and settings agree (avoids
+        # ValueError when env-supplied host differs from defaults).
+        self.client = chromadb.HttpClient(host=host, port=port, settings=settings)
         # Touch the collection to force a connectivity check
         self.collection = self.client.get_or_create_collection(collection_name)
 

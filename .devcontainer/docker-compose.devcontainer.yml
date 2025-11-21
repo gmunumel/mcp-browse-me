@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+    environment:
+      DATABASE_URL: postgresql://chinook:chinook@chinook-db:5432/chinook
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: "8000"
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    depends_on:
+      - chinook-db
+      - chromadb
