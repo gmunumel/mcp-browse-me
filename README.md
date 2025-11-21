@@ -148,13 +148,13 @@ A lightweight API surfaces the same MCP actions over HTTP.
 Start the server (after `uv sync`/`pip install -e .`):
 
 ```bash
-uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn src.api.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 Invoke it with `curl`, HTTPie, or your HTTP client of choice:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/actions \
+curl -X POST http://127.0.0.1:3000/actions \
   -H "Content-Type: application/json" \
   -d '{"action":"hello","value":"Alice"}'
 ```
@@ -174,12 +174,40 @@ The response payload mirrors the CLI output:
 An agent-backed endpoint uses OpenAI + LangChain to call the MCP tools on your behalf (requires `OPENAI_API_KEY` in `.env`).
 
 ```bash
-curl -X POST http://127.0.0.1:8000/agent \
+curl -X POST http://127.0.0.1:3000/agent \
   -H "Content-Type: application/json" \
   -d '{"question":"List files in . and tell me what database tables exist"}'
 ```
 
 The agent will invoke MCP tools like `browse_files`, `list_tables`, and `query_db` as needed to answer the question.
+
+### Stateful LangGraph Chatbot (persistent)
+
+A stateful agent stores the full chat transcript in Postgres and can optionally index exchanges in Chroma for similarity recall.
+
+1) Ensure the chat table exists (runs automatically on startup, or apply manually):
+
+```bash
+psql "$DATABASE_URL" -f data/ddl/chat_threads.sql
+```
+
+2) (Optional) Start Chroma for vector recall (client pinned to 0.5.15 to match the bundled container):
+
+```bash
+docker compose up -d chromadb
+export CHROMA_HOST=localhost
+export CHROMA_PORT=8000
+```
+
+3) Call the stateful `/agent` endpoint, passing `session_id` only when continuing an existing thread:
+
+```bash
+curl -X POST http://127.0.0.1:3000/agent \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello, keep track of this chat", "session_id": "f2f96c03-01fd-4681-a8d1-bbca0996b0d6"}'
+```
+
+The response returns the `session_id`; reuse it on subsequent calls to maintain history.
 
 ### Running Tests
 

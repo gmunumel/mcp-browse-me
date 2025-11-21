@@ -5,6 +5,7 @@ from src.models.action_response import ActionResponse
 from src.models.agent_request import AgentRequest
 from src.models.agent_response import AgentResponse
 from src.models.chat_state import ChatState
+from src.models.stateful_chat import StatefulChatRequest, StatefulChatResponse
 
 __all__ = [
     "ActionRequest",
@@ -12,4 +13,6 @@ __all__ = [
     "AgentRequest",
     "AgentResponse",
     "ChatState",
+    "StatefulChatRequest",
+    "StatefulChatResponse",
 ]

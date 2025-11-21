@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
     "fastapi>=0.110.0",
     "fastmcp>=2.13.0.2",
+    "chromadb==0.5.15",
     "langchain>=0.2.0",
     "langchain-openai>=0.1.0",
     "langgraph>=0.0.70",

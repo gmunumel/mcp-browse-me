@@ -19,5 +19,23 @@ services:
       retries: 5
       start_period: 5s
 
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:0.5.15
+    container_name: chromadb
+    restart: unless-stopped
+    environment:
+      - IS_PERSISTENT=TRUE
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "-", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   pgdata:
+  chroma-data:
